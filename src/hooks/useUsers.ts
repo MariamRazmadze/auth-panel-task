@@ -1,13 +1,27 @@
 import { useCallback } from "react";
+import { useApi } from "./useApi";
 import { UsersActions } from "../store/usersStore";
-import { usersApi } from "../services/usersApi";
+import { API_ENDPOINTS } from "../config/api.config";
 import type { PublicUser } from "../store/types/user";
 
+type UsersResponse = {
+  users: PublicUser[];
+};
+
 export const useUsers = () => {
+  const { get, post, put, del } = useApi();
+
   const fetchUsers = useCallback(async (): Promise<void> => {
     try {
       UsersActions.setLoading(true);
-      const users = await usersApi.fetchUsers();
+
+      const data = await get<UsersResponse>(API_ENDPOINTS.users.base);
+
+      const users = data.users.map((u: PublicUser) => ({
+        id: u.id,
+        username: u.username,
+        email: u.email,
+      }));
       UsersActions.setUsersData(users);
     } catch (error) {
       UsersActions.setError(
@@ -16,7 +30,7 @@ export const useUsers = () => {
     } finally {
       UsersActions.setLoading(false);
     }
-  }, []);
+  }, [get]);
 
   const addUser = async (user: {
     username: string;
@@ -24,7 +38,8 @@ export const useUsers = () => {
   }): Promise<void> => {
     UsersActions.setLoading(true);
     try {
-      const newUser = await usersApi.addUser(user);
+      const newUser = await post<PublicUser>(API_ENDPOINTS.users.add, user);
+
       UsersActions.addUserToStore(newUser);
       UsersActions.setMessage("User added");
     } catch (error) {
@@ -44,7 +59,8 @@ export const useUsers = () => {
   ): Promise<void> => {
     UsersActions.setLoading(true);
     try {
-      const updated = await usersApi.updateUser(id, data);
+      const updated = await put<PublicUser>(API_ENDPOINTS.users.byId(id), data);
+
       UsersActions.updateUserInStore(id, updated);
       UsersActions.setMessage("User updated");
     } catch (error) {
@@ -61,7 +77,8 @@ export const useUsers = () => {
   const deleteUser = async (id: number): Promise<void> => {
     UsersActions.setLoading(true);
     try {
-      await usersApi.deleteUser(id);
+      await del(API_ENDPOINTS.users.byId(id));
+
       UsersActions.deleteUserFromStore(id);
       UsersActions.setMessage("User deleted");
     } catch (error) {

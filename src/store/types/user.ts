@@ -17,3 +17,20 @@ export type StatusProps = {
   isSuccess: boolean;
   isError: string;
 };
+
+export type LoginResponse = {
+  id: number;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  accessToken: string;
+};
+
+export type UserResponse = {
+  id: number;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+};

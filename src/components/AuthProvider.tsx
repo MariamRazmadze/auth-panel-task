@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { authApi } from "../services/authApi";
+import { useAuth } from "../hooks/useAuth";
 import { AuthActions } from "../store/authStore";
 import { loadToken, removeToken } from "../utils/storage";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
+  const { getCurrentUser } = useAuth();
 
   useEffect(() => {
     const initAuth = async () => {
@@ -19,10 +20,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         AuthActions.setLoading(true);
         console.log("Restoring session with token:", token);
-        const user = await authApi.getCurrentUser(token);
-        console.log("User restored:", user);
 
-        AuthActions.setUser(user);
+        const success = await getCurrentUser(token);
+
+        if (success) {
+          console.log("User session restored");
+        } else {
+          console.error("Failed to restore session");
+          removeToken();
+          AuthActions.clearUser();
+        }
       } catch (error) {
         console.error("Failed to restore session:", error);
         removeToken();
@@ -34,7 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     initAuth();
-  }, []);
+  }, [getCurrentUser]);
 
   if (!isInitialized) {
     return <LoadingSpinner message="Initializing..." />;
